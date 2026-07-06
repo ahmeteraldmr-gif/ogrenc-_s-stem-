@@ -25,6 +25,37 @@ class ExamLogger extends Component
     public $examTypes = ['TYT', 'AYT', 'Deneme', 'Deneme-1', 'Deneme-2'];
     public $compareExamA = '';
     public $compareExamB = '';
+    
+    public $activeTab = 'TYT'; // 'TYT', 'AYT', 'Tümü'
+    public $expandedExamKey = null; // format: "exam_name|exam_date"
+
+    public function selectTab($tab)
+    {
+        $this->activeTab = $tab;
+        $this->compareExamA = '';
+        $this->compareExamB = '';
+        $this->expandedExamKey = null;
+        $this->resetPage();
+    }
+
+    public function toggleExam($key)
+    {
+        if ($this->expandedExamKey === $key) {
+            $this->expandedExamKey = null;
+        } else {
+            $this->expandedExamKey = $key;
+        }
+    }
+
+    public function getExamDetails($examName, $examDate)
+    {
+        $dateFormatted = is_string($examDate) ? \Carbon\Carbon::parse($examDate)->format('Y-m-d') : $examDate->format('Y-m-d');
+        return ExamResult::where('student_id', auth()->id())
+            ->where('exam_name', $examName)
+            ->whereDate('exam_date', $dateFormatted)
+            ->with('course')
+            ->get();
+    }
 
     protected function rules()
     {
@@ -174,56 +205,128 @@ class ExamLogger extends Component
         $this->closeModal();
     }
 
-    public function delete($id)
+    public function deleteExam($examName, $examDate)
     {
-        ExamResult::where('student_id', auth()->id())->findOrFail($id)->delete();
-        session()->flash('message', 'Kayıt silindi.');
+        $dateFormatted = is_string($examDate) ? \Carbon\Carbon::parse($examDate)->format('Y-m-d') : $examDate->format('Y-m-d');
+        ExamResult::where('student_id', auth()->id())
+            ->where('exam_name', $examName)
+            ->whereDate('exam_date', $dateFormatted)
+            ->delete();
+
+        session()->flash('message', 'Deneme sınavı kaydı başarıyla silindi.');
+        $this->expandedExamKey = null;
+        $this->resetPage();
     }
 
     public function render()
     {
         $courses = Course::where('is_active', true)->orderBy('name')->get();
         
-        $examResults = ExamResult::where('student_id', auth()->id())
-            ->with(['course', 'field'])
-            ->latest('exam_date')
-            ->paginate(10);
+        // Grouped list for the main table
+        $groupedExamsQuery = ExamResult::where('student_id', auth()->id())
+            ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->select('exam_name', 'exam_date', 'exam_type', 'student_id')
+            ->selectRaw('SUM(correct_answers) as total_correct, SUM(wrong_answers) as total_wrong, SUM(blank_answers) as total_blank, SUM(net_score) as total_net')
+            ->groupBy('exam_name', 'exam_date', 'exam_type', 'student_id')
+            ->orderBy('exam_date', 'desc');
 
+        $examResults = $groupedExamsQuery->paginate(10);
+
+        // Grouped stats for total average net, best, worst
+        $statsQuery = ExamResult::where('student_id', auth()->id())
+            ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->select('exam_name', 'exam_date', 'exam_type', 'student_id')
+            ->selectRaw('SUM(net_score) as total_net')
+            ->groupBy('exam_name', 'exam_date', 'exam_type', 'student_id')
+            ->orderBy('exam_date', 'asc')
+            ->get();
+
+        $totalExams = $statsQuery->count();
         $stats = [
-            'total_exams' => ExamResult::where('student_id', auth()->id())->count(),
-            'avg_net' => round(ExamResult::where('student_id', auth()->id())->avg('net_score'), 2),
-            'best_net' => round(ExamResult::where('student_id', auth()->id())->max('net_score'), 2),
-            'worst_net' => round(ExamResult::where('student_id', auth()->id())->min('net_score'), 2),
+            'total_exams' => $totalExams,
+            'avg_net' => $totalExams > 0 ? round($statsQuery->avg('total_net'), 2) : 0,
+            'best_net' => $totalExams > 0 ? round($statsQuery->max('total_net'), 2) : 0,
+            'worst_net' => $totalExams > 0 ? round($statsQuery->min('total_net'), 2) : 0,
         ];
 
         // Stats by field
         $fieldStats = [];
         $fieldsData = Field::courseFields()->where('is_active', true)->get();
         foreach ($fieldsData as $field) {
-            $fieldResults = ExamResult::where('student_id', auth()->id())
+            $fieldStatsQuery = ExamResult::where('student_id', auth()->id())
                 ->where('field_id', $field->id)
+                ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+                ->select('exam_name', 'exam_date', 'exam_type', 'student_id')
+                ->selectRaw('SUM(net_score) as total_net')
+                ->groupBy('exam_name', 'exam_date', 'exam_type', 'student_id')
                 ->get();
             
-            if ($fieldResults->count() > 0) {
+            if ($fieldStatsQuery->count() > 0) {
                 $fieldStats[$field->name] = [
-                    'count' => $fieldResults->count(),
-                    'avg_net' => round($fieldResults->avg('net_score'), 2),
-                    'best_net' => round($fieldResults->max('net_score'), 2),
+                    'count' => $fieldStatsQuery->count(),
+                    'avg_net' => round($fieldStatsQuery->avg('total_net'), 2),
+                    'best_net' => round($fieldStatsQuery->max('total_net'), 2),
                 ];
             }
         }
 
         // Unique Exams for Comparison Selector
-        $uniqueExamsList = ExamResult::where('student_id', auth()->id())
-            ->select('exam_name', 'exam_date')
-            ->groupBy('exam_name', 'exam_date')
+        $uniqueExamsQuery = ExamResult::where('student_id', auth()->id());
+        if ($this->activeTab && $this->activeTab !== 'Tümü') {
+            $uniqueExamsQuery->where('exam_type', $this->activeTab);
+        }
+        $uniqueExams = $uniqueExamsQuery->select('exam_name', 'exam_date', 'exam_type')
+            ->distinct()
             ->orderBy('exam_date', 'desc')
-            ->get()
-            ->map(function($item) {
-                $key = $item->exam_date->format('Y-m-d') . '|' . $item->exam_name;
-                $label = $item->exam_name . ' (' . $item->exam_date->format('d.m.Y') . ')';
-                return ['key' => $key, 'label' => $label];
-            });
+            ->orderBy('exam_name', 'asc')
+            ->get();
+        
+        $uniqueExamsList = [];
+        $examCounter = [];
+        foreach ($uniqueExams as $item) {
+            $typeKey = $item->exam_type ?: 'Genel';
+            if (!isset($examCounter[$typeKey])) {
+                $examCounter[$typeKey] = 0;
+            }
+            $examCounter[$typeKey]++;
+            
+            $examDate = is_string($item->exam_date) ? \Carbon\Carbon::parse($item->exam_date) : $item->exam_date;
+            
+            $totalNet = ExamResult::where('student_id', auth()->id())
+                ->where('exam_name', $item->exam_name)
+                ->whereDate('exam_date', $examDate->format('Y-m-d'))
+                ->sum('net_score');
+                
+            $key = $examDate->format('Y-m-d') . '|' . $item->exam_name;
+            $label = $item->exam_name . 
+                      ($item->exam_type ? ' (' . $item->exam_type . ' #' . $examCounter[$typeKey] . ')' : '') . 
+                      ' - ' . $examDate->format('d.m.Y') . 
+                      ' - Toplam: ' . number_format($totalNet, 2) . ' Net';
+                      
+            $uniqueExamsList[] = [
+                'key' => $key,
+                'label' => $label,
+                'exam_name' => $item->exam_name,
+                'exam_date' => $examDate->format('Y-m-d'),
+                'exam_type' => $item->exam_type,
+                'total_net' => round($totalNet, 2),
+            ];
+        }
+
+        // Dynamically filter second comparison exam to match first exam's type
+        $uniqueExamsListSecond = $uniqueExamsList;
+        if ($this->compareExamA) {
+            $firstExamDetail = collect($uniqueExamsList)->firstWhere('key', $this->compareExamA);
+            if ($firstExamDetail) {
+                $firstExamType = $firstExamDetail['exam_type'];
+                $uniqueExamsListSecond = collect($uniqueExamsList)
+                    ->filter(function($exam) use ($firstExamType) {
+                        return $exam['exam_type'] === $firstExamType && $exam['key'] !== $this->compareExamA;
+                    })
+                    ->values()
+                    ->toArray();
+            }
+        }
 
         // Exam Comparison Logic
         $comparison = null;
@@ -309,17 +412,12 @@ class ExamLogger extends Component
         }
 
         // Progress Chart Data (Last 8 exams chronologically)
-        $allExamResultsForChart = ExamResult::where('student_id', auth()->id())
-            ->get();
-            
-        $chartDataGrouped = $allExamResultsForChart->groupBy(function($item) {
-            return $item->exam_date->format('Y-m-d') . '|' . $item->exam_name;
-        })->map(function($group) {
-            $first = $group->first();
+        $chartDataGrouped = $statsQuery->map(function($exam) {
+            $examDate = is_string($exam->exam_date) ? \Carbon\Carbon::parse($exam->exam_date) : $exam->exam_date;
             return [
-                'date_name' => $first->exam_name . ' (' . $first->exam_date->format('d.m.Y') . ')',
-                'date_raw' => $first->exam_date->format('Y-m-d'),
-                'total_net' => $group->sum('net_score'),
+                'date_name' => $exam->exam_name . ' (' . $examDate->format('d.m.Y') . ')',
+                'date_raw' => $examDate->format('Y-m-d'),
+                'total_net' => $exam->total_net,
             ];
         })->sortBy('date_raw')->take(8)->values();
 
@@ -332,6 +430,7 @@ class ExamLogger extends Component
             'stats' => $stats,
             'fieldStats' => $fieldStats,
             'uniqueExamsList' => $uniqueExamsList,
+            'uniqueExamsListSecond' => $uniqueExamsListSecond,
             'comparison' => $comparison,
             'chartLabels' => $chartLabels,
             'chartNets' => $chartNets,
