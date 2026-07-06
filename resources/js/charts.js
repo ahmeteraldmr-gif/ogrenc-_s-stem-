@@ -34,6 +34,8 @@ Chart.register(
     Filler
 );
 
+window.Chart = Chart;
+
 // Initialize charts
 window.initExamCharts = function(chartData) {
     // Destroy existing charts
