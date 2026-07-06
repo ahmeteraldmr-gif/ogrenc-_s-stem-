@@ -11,7 +11,6 @@ class ExamTracking extends Component
 
     public $selectedStudent;
     public $selectedField;
-    public $selectedExamType;
     public $dateFrom;
     public $dateTo;
     public $sortBy = 'exam_date';
@@ -22,7 +21,8 @@ class ExamTracking extends Component
     public $selectedSecondExam;
     
     public $fields = [];
-    public $examTypes = ['TYT', 'AYT', 'Deneme', 'Deneme-1', 'Deneme-2'];
+    public $activeTab = 'TYT'; // 'TYT', 'AYT', 'Tümü'
+    public $expandedExamKey = null; // format: "student_id|exam_name|exam_date"
 
     public function mount()
     {
@@ -41,19 +41,48 @@ class ExamTracking extends Component
     {
         $this->selectedStudent = null;
         $this->selectedField = null;
-        $this->selectedExamType = null;
-        $this->dateFrom = null;
-        $this->dateTo = null;
         $this->selectedFirstExam = null;
         $this->selectedSecondExam = null;
+        $this->dateFrom = null;
+        $this->dateTo = null;
+        $this->expandedExamKey = null;
         $this->resetPage();
+    }
+    
+    public function selectTab($tab)
+    {
+        $this->activeTab = $tab;
+        $this->selectedFirstExam = null;
+        $this->selectedSecondExam = null;
+        $this->expandedExamKey = null;
+        $this->resetPage();
+    }
+
+    public function toggleExam($key)
+    {
+        if ($this->expandedExamKey === $key) {
+            $this->expandedExamKey = null;
+        } else {
+            $this->expandedExamKey = $key;
+        }
+    }
+
+    public function getExamDetails($studentId, $examName, $examDate)
+    {
+        $dateFormatted = is_string($examDate) ? \Carbon\Carbon::parse($examDate)->format('Y-m-d') : $examDate->format('Y-m-d');
+        return \App\Models\ExamResult::where('student_id', $studentId)
+            ->where('exam_name', $examName)
+            ->whereDate('exam_date', $dateFormatted)
+            ->with('course')
+            ->get();
     }
     
     public function updatedSelectedStudent()
     {
-        // Öğrenci değiştiğinde deneme seçimlerini sıfırla
+        // Öğrenci değiştiğinde seçimleri sıfırla
         $this->selectedFirstExam = null;
         $this->selectedSecondExam = null;
+        $this->expandedExamKey = null;
     }
 
     public function sortBy($field)
@@ -71,60 +100,60 @@ class ExamTracking extends Component
     {
         $students = auth()->user()->students;
 
-        $query = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'));
-
-        // Apply filters
-        if ($this->selectedStudent) {
-            $query->where('student_id', $this->selectedStudent);
-        }
-
-        if ($this->selectedField) {
-            $query->where('field_id', $this->selectedField);
-        }
-
-        if ($this->selectedExamType) {
-            $query->where('exam_type', $this->selectedExamType);
-        }
-
-        if ($this->dateFrom) {
-            $query->whereDate('exam_date', '>=', $this->dateFrom);
-        }
-
-        if ($this->dateTo) {
-            $query->whereDate('exam_date', '<=', $this->dateTo);
-        }
+        // Grouped list for the main table
+        $groupedExamsQuery = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'))
+            ->when($this->selectedStudent, fn($q) => $q->where('student_id', $this->selectedStudent))
+            ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->when($this->selectedField, fn($q) => $q->where('field_id', $this->selectedField))
+            ->when($this->dateFrom, fn($q) => $q->whereDate('exam_date', '>=', $this->dateFrom))
+            ->when($this->dateTo, fn($q) => $q->whereDate('exam_date', '<=', $this->dateTo))
+            ->select('exam_name', 'exam_date', 'exam_type', 'student_id')
+            ->selectRaw('SUM(correct_answers) as total_correct, SUM(wrong_answers) as total_wrong, SUM(blank_answers) as total_blank, SUM(net_score) as total_net')
+            ->groupBy('exam_name', 'exam_date', 'exam_type', 'student_id');
 
         // Apply sorting
-        $query->orderBy($this->sortBy, $this->sortDirection);
-
-        $examResults = $query->with(['student', 'course', 'field'])
-            ->paginate(15);
-
-        // Calculate statistics
-        $allResults = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'));
-        if ($this->selectedStudent) {
-            $allResults->where('student_id', $this->selectedStudent);
+        if ($this->sortBy === 'net_score') {
+            $groupedExamsQuery->orderBy('total_net', $this->sortDirection);
+        } elseif ($this->sortBy === 'exam_name') {
+            $groupedExamsQuery->orderBy('exam_name', $this->sortDirection);
+        } else {
+            $groupedExamsQuery->orderBy('exam_date', $this->sortDirection);
         }
-        
-        $allResultsData = $allResults->get();
-        
+
+        $examResults = $groupedExamsQuery->with('student')->paginate(15);
+
+        // Grouped stats for total average net, best, worst
+        $statsQuery = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'))
+            ->when($this->selectedStudent, fn($q) => $q->where('student_id', $this->selectedStudent))
+            ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->select('exam_name', 'exam_date', 'exam_type', 'student_id')
+            ->selectRaw('SUM(net_score) as total_net')
+            ->groupBy('exam_name', 'exam_date', 'exam_type', 'student_id')
+            ->orderBy('exam_date', 'asc')
+            ->get();
+
+        $totalExams = $statsQuery->count();
+        $avgNet = $totalExams > 0 ? round($statsQuery->avg('total_net'), 2) : 0;
+        $bestNet = $totalExams > 0 ? round($statsQuery->max('total_net'), 2) : 0;
+        $worstNet = $totalExams > 0 ? round($statsQuery->min('total_net'), 2) : 0;
+
         // Gelişim hesaplamaları
-        $firstHalf = $allResultsData->sortBy('exam_date')->take(ceil($allResultsData->count() / 2));
-        $secondHalf = $allResultsData->sortBy('exam_date')->skip(floor($allResultsData->count() / 2));
+        $firstHalf = $statsQuery->take(ceil($totalExams / 2));
+        $secondHalf = $statsQuery->skip(floor($totalExams / 2));
         
-        $firstHalfAvg = $firstHalf->count() > 0 ? round($firstHalf->avg('net_score'), 2) : 0;
-        $secondHalfAvg = $secondHalf->count() > 0 ? round($secondHalf->avg('net_score'), 2) : 0;
+        $firstHalfAvg = $firstHalf->count() > 0 ? round($firstHalf->avg('total_net'), 2) : 0;
+        $secondHalfAvg = $secondHalf->count() > 0 ? round($secondHalf->avg('total_net'), 2) : 0;
         $improvement = $secondHalfAvg - $firstHalfAvg;
         $improvementPercentage = $firstHalfAvg > 0 ? round(($improvement / $firstHalfAvg) * 100, 1) : 0;
-        
+
         $stats = [
-            'total_exams' => $allResultsData->count(),
-            'avg_net' => round($allResultsData->avg('net_score'), 2),
-            'best_net' => round($allResultsData->max('net_score'), 2),
-            'worst_net' => round($allResultsData->min('net_score'), 2),
+            'total_exams' => $totalExams,
+            'avg_net' => $avgNet,
+            'best_net' => $bestNet,
+            'worst_net' => $worstNet,
             'first_half_avg' => $firstHalfAvg,
             'second_half_avg' => $secondHalfAvg,
-            'improvement' => round($improvement, 2),
+            'improvement' => $improvement,
             'improvement_percentage' => $improvementPercentage,
         ];
 
@@ -145,9 +174,13 @@ class ExamTracking extends Component
         // Öğrencinin tüm denemelerini al (karşılaştırma için) - Benzersiz deneme adı+tarih kombinasyonları
         $availableExams = [];
         if ($this->selectedStudent) {
-            // Benzersiz deneme adı+tarih kombinasyonlarını bul
-            $uniqueExams = \App\Models\ExamResult::where('student_id', $this->selectedStudent)
-                ->select('exam_name', 'exam_date', 'exam_type')
+            $uniqueExamsQuery = \App\Models\ExamResult::where('student_id', $this->selectedStudent);
+            
+            if ($this->activeTab && $this->activeTab !== 'Tümü') {
+                $uniqueExamsQuery->where('exam_type', $this->activeTab);
+            }
+            
+            $uniqueExams = $uniqueExamsQuery->select('exam_name', 'exam_date', 'exam_type')
                 ->distinct()
                 ->orderBy('exam_date', 'asc')
                 ->orderBy('exam_name', 'asc')
@@ -155,15 +188,12 @@ class ExamTracking extends Component
             
             $examCounter = [];
             foreach ($uniqueExams as $uniqueExam) {
-                // Her deneme türü için sayaç
                 $typeKey = $uniqueExam->exam_type ?: 'Genel';
                 if (!isset($examCounter[$typeKey])) {
                     $examCounter[$typeKey] = 0;
                 }
                 $examCounter[$typeKey]++;
                 
-                // Bu deneme için toplam net skorunu hesapla (tüm derslerin toplamı)
-                // exam_date'i Carbon instance olarak kullan
                 $examDate = is_string($uniqueExam->exam_date) ? \Carbon\Carbon::parse($uniqueExam->exam_date) : $uniqueExam->exam_date;
                 
                 $totalNet = \App\Models\ExamResult::where('student_id', $this->selectedStudent)
@@ -171,14 +201,13 @@ class ExamTracking extends Component
                     ->whereDate('exam_date', $examDate->format('Y-m-d'))
                     ->sum('net_score');
                 
-                // İlk exam_result'ı ID olarak kullan (dropdown için)
                 $firstResult = \App\Models\ExamResult::where('student_id', $this->selectedStudent)
                     ->where('exam_name', $uniqueExam->exam_name)
                     ->whereDate('exam_date', $examDate->format('Y-m-d'))
                     ->first();
                 
                 if ($firstResult) {
-                    $dateFormatted = $examDate instanceof \Carbon\Carbon ? $examDate->format('d.m.Y') : \Carbon\Carbon::parse($examDate)->format('d.m.Y');
+                    $dateFormatted = $examDate->format('d.m.Y');
                     $availableExams[] = [
                         'id' => $firstResult->id,
                         'label' => $uniqueExam->exam_name . 
@@ -186,11 +215,26 @@ class ExamTracking extends Component
                                   ' - ' . $dateFormatted . 
                                   ' - Toplam: ' . number_format($totalNet, 2) . ' Net',
                         'exam_name' => $uniqueExam->exam_name,
-                        'exam_date' => $examDate instanceof \Carbon\Carbon ? $examDate->format('Y-m-d') : \Carbon\Carbon::parse($examDate)->format('Y-m-d'),
+                        'exam_date' => $examDate->format('Y-m-d'),
                         'exam_type' => $uniqueExam->exam_type,
                         'total_net' => round($totalNet, 2),
                     ];
                 }
+            }
+        }
+
+        // Dynamically filter second exam dropdown options based on selectedFirstExam's type
+        $availableSecondExams = $availableExams;
+        if ($this->selectedFirstExam) {
+            $firstExamDetail = collect($availableExams)->firstWhere('id', $this->selectedFirstExam);
+            if ($firstExamDetail) {
+                $firstExamType = $firstExamDetail['exam_type'];
+                $availableSecondExams = collect($availableExams)
+                    ->filter(function($exam) use ($firstExamType) {
+                        return $exam['exam_type'] === $firstExamType && $exam['id'] != $this->selectedFirstExam;
+                    })
+                    ->values()
+                    ->toArray();
             }
         }
 
@@ -201,6 +245,7 @@ class ExamTracking extends Component
             'chartData' => $chartData,
             'studentExamTypes' => $studentExamTypes,
             'availableExams' => $availableExams,
+            'availableSecondExams' => $availableSecondExams,
         ]);
     }
 
@@ -212,12 +257,27 @@ class ExamTracking extends Component
             $query->where('student_id', $this->selectedStudent);
         }
 
+        if ($this->activeTab && $this->activeTab !== 'Tümü') {
+            $query->where('exam_type', $this->activeTab);
+        }
+
         // Tüm denemeleri al (limit yok, gelişimi görmek için)
         $recentExams = $query->with(['course', 'field'])
             ->orderBy('exam_date', 'asc') // Chronological order
             ->get();
 
-        // Net Progress Chart (Line Chart) - TYT ve AYT ayrı göster
+        // Chronological unique exams total net progress query
+        $progressQuery = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'))
+            ->when($this->selectedStudent, fn($q) => $q->where('student_id', $this->selectedStudent))
+            ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->select('exam_name', 'exam_date', 'exam_type')
+            ->selectRaw('SUM(net_score) as total_net')
+            ->groupBy('exam_name', 'exam_date', 'exam_type')
+            ->orderBy('exam_date', 'asc');
+
+        $recentExamsGrouped = $progressQuery->get();
+
+        // Net Progress Chart (Line Chart)
         $netProgressData = [
             'labels' => [],
             'tytData' => [],
@@ -225,17 +285,19 @@ class ExamTracking extends Component
             'allData' => [],
         ];
 
-        foreach ($recentExams as $exam) {
-            $dateLabel = $exam->exam_date->format('d.m.Y');
-            $netProgressData['labels'][] = $dateLabel;
-            $netProgressData['allData'][] = round($exam->net_score, 2);
+        foreach ($recentExamsGrouped as $exam) {
+            $examDate = is_string($exam->exam_date) ? \Carbon\Carbon::parse($exam->exam_date) : $exam->exam_date;
+            $dateLabel = $examDate->format('d.m.Y');
+            $label = $exam->exam_name . ' (' . $dateLabel . ')';
+            $netProgressData['labels'][] = $label;
+            $netProgressData['allData'][] = round($exam->total_net, 2);
             
             if ($exam->exam_type === 'TYT') {
-                $netProgressData['tytData'][] = round($exam->net_score, 2);
+                $netProgressData['tytData'][] = round($exam->total_net, 2);
                 $netProgressData['aytData'][] = null;
             } elseif ($exam->exam_type === 'AYT') {
                 $netProgressData['tytData'][] = null;
-                $netProgressData['aytData'][] = round($exam->net_score, 2);
+                $netProgressData['aytData'][] = round($exam->total_net, 2);
             } else {
                 $netProgressData['tytData'][] = null;
                 $netProgressData['aytData'][] = null;
