@@ -118,107 +118,64 @@
     <main class="flex-grow w-full max-w-7xl mx-auto px-6 py-12 md:py-20 space-y-24">
         
         <!-- Hero Section -->
-        <section class="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-            <!-- Left: Hero Text & Demo -->
-            <div class="flex-1 space-y-8">
-                <div class="space-y-4">
-                    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
-                        ⚡ Yapay Zeka Destekli & Akıllı Koçluk Platformu
-                    </span>
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight">
-                        Öğrencilerinizi <br>
-                        <span class="text-gradient">Akıllı İlerleme</span> <br>ile Takip Edin
-                    </h1>
-                    <p class="text-base md:text-lg text-slate-600 max-w-xl leading-relaxed">
-                        Sınava hazırlanan öğrenciler için ders, konu analizi, günlük soru takibi ve deneme gelişimlerini tek bir akıllı platformdan yönetin. Koçluk verimliliğinizi 3 katına çıkarın.
-                    </p>
-                </div>
-
-                <!-- Demo Access Box -->
-                <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100/80 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Hızlı Demo Girişleri</h3>
-                        <span class="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-0.5 rounded">Kurulumsuz Test</span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <!-- Admin Login -->
-                        <form method="POST" action="{{ route('login') }}">
-                            @csrf
-                            <input type="hidden" name="email" value="admin@ogrenci.com">
-                            <input type="hidden" name="password" value="password">
-                            <button type="submit" class="demo-btn w-full py-4 px-4 bg-slate-900 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
-                                <span class="text-xs">🔑 Demo Admin</span>
-                                <span class="text-[10px] text-slate-400 font-normal">Sistem Yönetimi</span>
-                            </button>
-                        </form>
-
-                        <!-- Coach Login -->
-                        <form method="POST" action="{{ route('login') }}">
-                            @csrf
-                            <input type="hidden" name="email" value="coach1@ogrenci.com">
-                            <input type="hidden" name="password" value="password">
-                            <button type="submit" class="demo-btn w-full py-4 px-4 bg-indigo-600 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
-                                <span class="text-xs">🧠 Demo Koç</span>
-                                <span class="text-[10px] text-indigo-200 font-normal">Öğrenci & Program</span>
-                            </button>
-                        </form>
-
-                        <!-- Student Login -->
-                        <form method="POST" action="{{ route('login') }}">
-                            @csrf
-                            <input type="hidden" name="email" value="student1@ogrenci.com">
-                            <input type="hidden" name="password" value="password">
-                            <button type="submit" class="demo-btn w-full py-4 px-4 bg-emerald-600 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
-                                <span class="text-xs">🎓 Demo Öğrenci</span>
-                                <span class="text-[10px] text-emerald-200 font-normal">Soru & Sınav Takibi</span>
-                            </button>
-                        </form>
-                    </div>
-                    <p class="text-[11px] text-slate-500 text-center italic mt-2">
-                        💡 Butonlara tıklayarak doğrudan demo panellerine erişebilirsiniz. Şifreler otomatik doldurulur.
-                    </p>
-                </div>
+        <section class="max-w-4xl mx-auto text-center space-y-8 py-6">
+            <!-- Hero Text -->
+            <div class="space-y-4">
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm mx-auto">
+                    ⚡ Yapay Zeka Destekli & Akıllı Koçluk Platformu
+                </span>
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight">
+                    Öğrencilerinizi <br>
+                    <span class="text-gradient">Akıllı İlerleme</span> ile Takip Edin
+                </h1>
+                <p class="text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                    Sınava hazırlanan öğrenciler için ders, konu analizi, günlük soru takibi ve deneme gelişimlerini tek bir akıllı platformdan yönetin. Koçluk verimliliğinizi 3 katına çıkarın.
+                </p>
             </div>
 
-            <!-- Right: Beautiful Abstract Interface Mockup -->
-            <div class="w-full lg:w-[500px] flex items-center justify-center relative">
-                <div class="absolute inset-0 bg-indigo-400 rounded-full blur-3xl opacity-10 -z-10"></div>
-                <div class="bg-gradient-to-tr from-indigo-100/60 to-emerald-50 border border-slate-200 rounded-3xl p-6 shadow-xl w-full space-y-4">
-                    <!-- Fake Card 1 -->
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-indigo-50 rounded-xl text-indigo-600">📈</div>
-                            <div>
-                                <span class="text-xs text-slate-400 block font-bold">Öğrenci Gelişimi</span>
-                                <span class="text-sm font-extrabold text-slate-900">Son TYT: 98.75 Net</span>
-                            </div>
-                        </div>
-                        <span class="text-xs text-green-600 font-black bg-green-50 px-2 py-0.5 rounded">+4.2 Net</span>
-                    </div>
-
-                    <!-- Fake Card 2 -->
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <span class="text-xs font-extrabold text-slate-800">Günlük Soru Hedefi</span>
-                            <span class="text-xs text-indigo-600 font-bold">340 / 400 Soru</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-indigo-500 h-full rounded-full" style="width: 85%;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Fake Card 3 -->
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-emerald-50 rounded-xl text-emerald-600">📅</div>
-                            <div>
-                                <span class="text-xs text-slate-400 block font-bold">Haftalık Program</span>
-                                <span class="text-xs font-semibold text-slate-600">Pazartesi: Matematik & Türkçe</span>
-                            </div>
-                        </div>
-                        <span class="text-[10px] text-slate-400">Aktif</span>
-                    </div>
+            <!-- Demo Access Box -->
+            <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100/80 space-y-4 max-w-2xl mx-auto text-left">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Hızlı Demo Girişleri</h3>
+                    <span class="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-0.5 rounded">Kurulumsuz Test</span>
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- Admin Login -->
+                    <form method="POST" action="{{ route('login') }}">
+                        @csrf
+                        <input type="hidden" name="email" value="admin@ogrenci.com">
+                        <input type="hidden" name="password" value="password">
+                        <button type="submit" class="demo-btn w-full py-4 px-4 bg-slate-900 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
+                            <span class="text-xs">🔑 Demo Admin</span>
+                            <span class="text-[10px] text-slate-400 font-normal">Sistem Yönetimi</span>
+                        </button>
+                    </form>
+
+                    <!-- Coach Login -->
+                    <form method="POST" action="{{ route('login') }}">
+                        @csrf
+                        <input type="hidden" name="email" value="coach1@ogrenci.com">
+                        <input type="hidden" name="password" value="password">
+                        <button type="submit" class="demo-btn w-full py-4 px-4 bg-indigo-600 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
+                            <span class="text-xs">🧠 Demo Koç</span>
+                            <span class="text-[10px] text-indigo-200 font-normal">Öğrenci & Program</span>
+                        </button>
+                    </form>
+
+                    <!-- Student Login -->
+                    <form method="POST" action="{{ route('login') }}">
+                        @csrf
+                        <input type="hidden" name="email" value="student1@ogrenci.com">
+                        <input type="hidden" name="password" value="password">
+                        <button type="submit" class="demo-btn w-full py-4 px-4 bg-emerald-600 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
+                            <span class="text-xs">🎓 Demo Öğrenci</span>
+                            <span class="text-[10px] text-emerald-200 font-normal">Soru & Sınav Takibi</span>
+                        </button>
+                    </form>
+                </div>
+                <p class="text-[11px] text-slate-500 text-center italic mt-2">
+                    💡 Butonlara tıklayarak doğrudan demo panellerine erişebilirsiniz. Şifreler otomatik doldurulur.
+                </p>
             </div>
         </section>
 
