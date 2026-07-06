@@ -37,17 +37,6 @@ class ExamReportController extends Controller
             return back()->with('error', 'Bu öğrencinin henüz kaydedilmiş deneme sınavı sonucu bulunmamaktadır.');
         }
 
-        // Stats calculation
-        $stats = [
-            'total_entries' => $examResults->count(),
-            'avg_net' => round($examResults->avg('net_score'), 2),
-            'best_net' => round($examResults->max('net_score'), 2),
-            'worst_net' => round($examResults->min('net_score'), 2),
-            'total_exams' => $examResults->groupBy(function($item) {
-                return $item->exam_date->format('Y-m-d') . '_' . $item->exam_name;
-            })->count(),
-        ];
-
         // Group results by exam date + name + type
         $groupedResults = [];
         foreach ($examResults as $result) {
@@ -78,18 +67,38 @@ class ExamReportController extends Controller
             $groupedResults[$key]['total_net'] += $result->net_score;
         }
 
-        // Stats by field
+        // Stats calculation based on grouped overall exams
+        $totalExams = count($groupedResults);
+        $allTotalNets = collect($groupedResults)->pluck('total_net');
+        
+        $stats = [
+            'total_entries' => $examResults->count(),
+            'avg_net' => $totalExams > 0 ? round($allTotalNets->avg(), 2) : 0,
+            'best_net' => $totalExams > 0 ? round($allTotalNets->max(), 2) : 0,
+            'worst_net' => $totalExams > 0 ? round($allTotalNets->min(), 2) : 0,
+            'total_exams' => $totalExams,
+        ];
+
+        // Stats by field (correctly calculating overall net score per exam)
         $fieldStats = [];
         $fieldsData = Field::courseFields()->where('is_active', true)->get();
         foreach ($fieldsData as $field) {
-            $fieldResults = $examResults->where('field_id', $field->id);
-            if ($fieldResults->count() > 0) {
+            $fieldExamGroups = [];
+            foreach ($examResults->where('field_id', $field->id) as $res) {
+                $fKey = $res->exam_date->format('Y-m-d') . '_' . $res->exam_name;
+                if (!isset($fieldExamGroups[$fKey])) {
+                    $fieldExamGroups[$fKey] = 0;
+                }
+                $fieldExamGroups[$fKey] += $res->net_score;
+            }
+            
+            $fCount = count($fieldExamGroups);
+            if ($fCount > 0) {
+                $fNets = collect($fieldExamGroups);
                 $fieldStats[$field->name] = [
-                    'count' => $fieldResults->groupBy(function($item) {
-                        return $item->exam_date->format('Y-m-d') . '_' . $item->exam_name;
-                    })->count(),
-                    'avg_net' => round($fieldResults->avg('net_score'), 2),
-                    'best_net' => round($fieldResults->max('net_score'), 2),
+                    'count' => $fCount,
+                    'avg_net' => round($fNets->avg(), 2),
+                    'best_net' => round($fNets->max(), 2),
                 ];
             }
         }
