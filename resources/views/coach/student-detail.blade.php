@@ -1,0 +1,8 @@
+<x-layouts.coach>
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <livewire:coach.student-detail :studentId="$studentId" />
+        </div>
+    </div>
+</x-layouts.coach>
+

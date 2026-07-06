@@ -1,0 +1,14 @@
+<x-layouts.coach>
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">{{ __('messages.assign_courses') }}</h1>
+                <p class="mt-1 text-sm text-gray-600">
+                    Öğrenciye alan, ders ve konuları atayın
+                </p>
+            </div>
+
+            <livewire:coach.assign-courses :studentId="$studentId" />
+        </div>
+    </div>
+</x-layouts.coach>
