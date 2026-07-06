@@ -14,6 +14,7 @@ class HandleRequestsWithSubdir extends HandleRequests
 {
     public function getUpdateUri(): string
     {
-        return '/public/livewire/update';
+        $base = request()->getBaseUrl();
+        return ($base ? rtrim($base, '/') : '') . '/livewire/update';
     }
 }
