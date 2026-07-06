@@ -23,6 +23,8 @@ class ExamTracking extends Component
     public $fields = [];
     public $activeTab = 'TYT'; // 'TYT', 'AYT', 'Tümü'
     public $expandedExamKey = null; // format: "student_id|exam_name|exam_date"
+    public $selectedExamType;
+    public $examTypes = ['TYT', 'AYT', 'Deneme', 'Deneme-1', 'Deneme-2'];
 
     public function mount()
     {
@@ -41,6 +43,7 @@ class ExamTracking extends Component
     {
         $this->selectedStudent = null;
         $this->selectedField = null;
+        $this->selectedExamType = null;
         $this->selectedFirstExam = null;
         $this->selectedSecondExam = null;
         $this->dateFrom = null;
@@ -52,6 +55,7 @@ class ExamTracking extends Component
     public function selectTab($tab)
     {
         $this->activeTab = $tab;
+        $this->selectedExamType = null;
         $this->selectedFirstExam = null;
         $this->selectedSecondExam = null;
         $this->expandedExamKey = null;
@@ -104,6 +108,7 @@ class ExamTracking extends Component
         $groupedExamsQuery = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'))
             ->when($this->selectedStudent, fn($q) => $q->where('student_id', $this->selectedStudent))
             ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->when($this->selectedExamType, fn($q) => $q->where('exam_type', $this->selectedExamType))
             ->when($this->selectedField, fn($q) => $q->where('field_id', $this->selectedField))
             ->when($this->dateFrom, fn($q) => $q->whereDate('exam_date', '>=', $this->dateFrom))
             ->when($this->dateTo, fn($q) => $q->whereDate('exam_date', '<=', $this->dateTo))
@@ -126,6 +131,7 @@ class ExamTracking extends Component
         $statsQuery = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'))
             ->when($this->selectedStudent, fn($q) => $q->where('student_id', $this->selectedStudent))
             ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->when($this->selectedExamType, fn($q) => $q->where('exam_type', $this->selectedExamType))
             ->select('exam_name', 'exam_date', 'exam_type', 'student_id')
             ->selectRaw('SUM(net_score) as total_net')
             ->groupBy('exam_name', 'exam_date', 'exam_type', 'student_id')
@@ -261,6 +267,10 @@ class ExamTracking extends Component
             $query->where('exam_type', $this->activeTab);
         }
 
+        if ($this->selectedExamType) {
+            $query->where('exam_type', $this->selectedExamType);
+        }
+
         // Tüm denemeleri al (limit yok, gelişimi görmek için)
         $recentExams = $query->with(['course', 'field'])
             ->orderBy('exam_date', 'asc') // Chronological order
@@ -270,6 +280,7 @@ class ExamTracking extends Component
         $progressQuery = \App\Models\ExamResult::whereIn('student_id', $students->pluck('id'))
             ->when($this->selectedStudent, fn($q) => $q->where('student_id', $this->selectedStudent))
             ->when($this->activeTab && $this->activeTab !== 'Tümü', fn($q) => $q->where('exam_type', $this->activeTab))
+            ->when($this->selectedExamType, fn($q) => $q->where('exam_type', $this->selectedExamType))
             ->select('exam_name', 'exam_date', 'exam_type')
             ->selectRaw('SUM(net_score) as total_net')
             ->groupBy('exam_name', 'exam_date', 'exam_type')
