@@ -133,49 +133,19 @@
                 </p>
             </div>
 
-            <!-- Demo Access Box -->
-            <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100/80 space-y-4 max-w-2xl mx-auto text-left">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Hızlı Demo Girişleri</h3>
-                    <span class="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-0.5 rounded">Kurulumsuz Test</span>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <!-- Admin Login -->
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
-                        <input type="hidden" name="email" value="admin@ogrenci.com">
-                        <input type="hidden" name="password" value="password">
-                        <button type="submit" class="demo-btn w-full py-4 px-4 bg-slate-900 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
-                            <span class="text-xs">🔑 Demo Admin</span>
-                            <span class="text-[10px] text-slate-400 font-normal">Sistem Yönetimi</span>
-                        </button>
-                    </form>
-
-                    <!-- Coach Login -->
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
-                        <input type="hidden" name="email" value="coach1@ogrenci.com">
-                        <input type="hidden" name="password" value="password">
-                        <button type="submit" class="demo-btn w-full py-4 px-4 bg-indigo-600 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
-                            <span class="text-xs">🧠 Demo Koç</span>
-                            <span class="text-[10px] text-indigo-200 font-normal">Öğrenci & Program</span>
-                        </button>
-                    </form>
-
-                    <!-- Student Login -->
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
-                        <input type="hidden" name="email" value="student1@ogrenci.com">
-                        <input type="hidden" name="password" value="password">
-                        <button type="submit" class="demo-btn w-full py-4 px-4 bg-emerald-600 text-white rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 shadow-md cursor-pointer">
-                            <span class="text-xs">🎓 Demo Öğrenci</span>
-                            <span class="text-[10px] text-emerald-200 font-normal">Soru & Sınav Takibi</span>
-                        </button>
-                    </form>
-                </div>
-                <p class="text-[11px] text-slate-500 text-center italic mt-2">
-                    💡 Butonlara tıklayarak doğrudan demo panellerine erişebilirsiniz. Şifreler otomatik doldurulur.
-                </p>
+            <!-- CTA Button -->
+            <div class="pt-4">
+                @auth
+                    <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : (auth()->user()->isCoach() ? route('coach.dashboard') : route('student.dashboard')) }}" 
+                       class="inline-block px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-base font-extrabold shadow-lg shadow-indigo-200 transition-all hover:scale-105" style="text-decoration: none;">
+                        Panele Git ➜
+                    </a>
+                @else
+                    <a href="{{ route('login') }}" 
+                       class="inline-block px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-base font-extrabold shadow-lg shadow-indigo-200 transition-all hover:scale-105" style="text-decoration: none;">
+                        Sisteme Giriş Yap ➜
+                    </a>
+                @endauth
             </div>
         </section>
 
