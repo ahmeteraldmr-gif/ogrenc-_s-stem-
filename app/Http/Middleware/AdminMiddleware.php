@@ -31,10 +31,12 @@ class AdminMiddleware
             return redirect('/');
         }
 
-        // Admin abonelik kontrolü (Dershane abonelik kontrolü)
-        $subscription = $user->subscription;
-        if (!$subscription || !$subscription->is_active || ($subscription->end_date && $subscription->end_date->isPast())) {
-            return redirect()->route('subscription.expired');
+        // Admin abonelik kontrolü (Dershane abonelik kontrolü) - SuperAdmin için atla
+        if (!$user->isSuperAdmin()) {
+            $subscription = $user->subscription;
+            if (!$subscription || !$subscription->is_active || ($subscription->end_date && $subscription->end_date->isPast())) {
+                return redirect()->route('subscription.expired');
+            }
         }
 
         return $next($request);

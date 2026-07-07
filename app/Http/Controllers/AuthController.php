@@ -32,16 +32,18 @@ class AuthController extends Controller
 
             // Kullanıcının rolüne göre yönlendir
             if ($user->isAdmin()) {
-                // Admin abonelik kontrolü
-                $subscription = $user->subscription;
-                if (!$subscription || !$subscription->is_active || ($subscription->end_date && $subscription->end_date->isPast())) {
-                    return redirect()->route('subscription.expired');
+                // SuperAdmin için abonelik kontrolünü atla
+                if (!$user->isSuperAdmin()) {
+                    $subscription = $user->subscription;
+                    if (!$subscription || !$subscription->is_active || ($subscription->end_date && $subscription->end_date->isPast())) {
+                        return redirect()->route('subscription.expired');
+                    }
                 }
                 return redirect()->intended('/admin/dashboard');
             } elseif ($user->isCoach()) {
-                // Genel dershane abonelik kontrolü
+                // Genel dershane abonelik kontrolü (Sadece 'admin' rolünü kontrol et)
                 $admin = \App\Models\User::whereHas('role', function($q) {
-                    $q->whereIn('name', ['admin', 'superadmin']);
+                    $q->where('name', 'admin');
                 })->first();
                 if ($admin) {
                     $adminSub = $admin->subscription;
@@ -57,9 +59,9 @@ class AuthController extends Controller
                 }
                 return redirect()->intended('/coach/dashboard');
             } elseif ($user->isStudent()) {
-                // Genel dershane abonelik kontrolü
+                // Genel dershane abonelik kontrolü (Sadece 'admin' rolünü kontrol et)
                 $admin = \App\Models\User::whereHas('role', function($q) {
-                    $q->whereIn('name', ['admin', 'superadmin']);
+                    $q->where('name', 'admin');
                 })->first();
                 if ($admin) {
                     $adminSub = $admin->subscription;

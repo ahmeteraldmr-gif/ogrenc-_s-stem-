@@ -35,6 +35,11 @@ Route::get('/subscription-expired', function () {
 
     $user = auth()->user();
 
+    // SuperAdmin ise doğrudan panele yönlendir
+    if ($user->isSuperAdmin()) {
+        return redirect('/admin/dashboard');
+    }
+
     if ($user->isAdmin()) {
         $subscription = $user->subscription;
         if ($subscription && $subscription->is_active && !($subscription->end_date && $subscription->end_date->isPast())) {
@@ -42,7 +47,7 @@ Route::get('/subscription-expired', function () {
         }
     } elseif ($user->isStudent()) {
         $admin = \App\Models\User::whereHas('role', function($q) {
-            $q->whereIn('name', ['admin', 'superadmin']);
+            $q->where('name', 'admin');
         })->first();
         if ($admin) {
             $adminSub = $admin->subscription;
@@ -63,7 +68,7 @@ Route::get('/subscription-expired', function () {
         $displaySubscription = $user->subscription;
     } else {
         $admin = \App\Models\User::whereHas('role', function($q) {
-            $q->whereIn('name', ['admin', 'superadmin']);
+            $q->where('name', 'admin');
         })->first();
         if ($admin) {
             $displaySubscription = $admin->subscription;

@@ -35,7 +35,7 @@ class CoachMiddleware
 
         // Genel Dershane (Admin) Abonelik Kontrolü
         $admin = \App\Models\User::whereHas('role', function($q) {
-            $q->whereIn('name', ['admin', 'superadmin']);
+            $q->where('name', 'admin');
         })->first();
 
         if ($admin) {
