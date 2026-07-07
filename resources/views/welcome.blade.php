@@ -291,7 +291,7 @@
                 <div class="premium-card rounded-3xl p-6 flex flex-col justify-between space-y-6">
                     <div class="space-y-3">
                         <span class="text-xs font-bold text-slate-400 uppercase">Başlangıç</span>
-                        <h3 class="text-3xl font-black text-slate-900">₺199<span class="text-xs font-medium text-slate-400">/ay</span></h3>
+                        <h3 class="text-3xl font-black text-slate-900">₺300<span class="text-xs font-medium text-slate-400">/ay</span></h3>
                         <p class="text-xs text-slate-500">Bireysel ve küçük ölçekli koçluk yapanlar için ideal.</p>
                         <hr class="border-slate-100">
                         <ul class="text-xs space-y-2.5 text-slate-600">
@@ -309,7 +309,7 @@
                 <div class="premium-card rounded-3xl p-6 flex flex-col justify-between space-y-6">
                     <div class="space-y-3">
                         <span class="text-xs font-bold text-slate-400 uppercase">Standart</span>
-                        <h3 class="text-3xl font-black text-slate-900">₺399<span class="text-xs font-medium text-slate-400">/ay</span></h3>
+                        <h3 class="text-3xl font-black text-slate-900">₺800<span class="text-xs font-medium text-slate-400">/ay</span></h3>
                         <p class="text-xs text-slate-500">Genişleyen öğrenci portföyleri için en dengeli paket.</p>
                         <hr class="border-slate-100">
                         <ul class="text-xs space-y-2.5 text-slate-600">
@@ -329,7 +329,7 @@
                     <div class="absolute top-0 right-0 bg-indigo-600 text-white text-[9px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">Popüler</div>
                     <div class="space-y-3">
                         <span class="text-xs font-bold text-indigo-500 uppercase">Premium</span>
-                        <h3 class="text-3xl font-black text-slate-900">₺699<span class="text-xs font-medium text-slate-400">/ay</span></h3>
+                        <h3 class="text-3xl font-black text-slate-900">₺999<span class="text-xs font-medium text-slate-400">/ay</span></h3>
                         <p class="text-xs text-slate-500">Profesyonel koçlar ve butik kurs merkezleri için tam güç.</p>
                         <hr class="border-slate-100">
                         <ul class="text-xs space-y-2.5 text-slate-600">
@@ -349,11 +349,11 @@
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.15),transparent_60%)]"></div>
                     <div class="space-y-3 z-10">
                         <span class="text-xs font-bold text-emerald-400 uppercase">Kurumsal / Sınırsız</span>
-                        <h3 class="text-3xl font-black text-white">₺999<span class="text-xs font-medium text-slate-500">/ay</span></h3>
-                        <p class="text-xs text-slate-400">Kurumlar ve sınırsız büyüme hedefleyenler için sınırsız seçenek.</p>
+                        <h3 class="text-3xl font-black text-white">₺1250<span class="text-xs font-medium text-slate-500">/ay</span></h3>
+                        <p class="text-xs text-slate-400">Kurumlar ve en üst düzey takip gücü arayanlar için.</p>
                         <hr class="border-slate-850">
                         <ul class="text-xs space-y-2.5 text-slate-300">
-                            <li>✔️ <strong>Sınırsız Öğrenci</strong> Kaydı</li>
+                            <li>✔️ <strong>100 Öğrenciye Kadar</strong> Kayıt</li>
                             <li>✔️ Tüm Sistem Özellikleri Aktif</li>
                             <li>✔️ Öncelikli Altyapı ve Sunucu</li>
                             <li>✔️ Kurumsal Raporlama Şablonu</li>
