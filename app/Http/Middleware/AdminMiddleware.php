@@ -39,6 +39,12 @@ class AdminMiddleware
             }
         }
 
-        return $next($request);
+        $response = $next($request);
+        
+        $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', 'Sun, 02 Jan 1990 00:00:00 GMT');
+        
+        return $response;
     }
 }
