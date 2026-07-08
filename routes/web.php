@@ -12,7 +12,7 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Abonelik kontrolü ve özel durumlarda yönlendirme
 Route::get('/subscription-expired', function () {
