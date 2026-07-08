@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'coach' => \App\Http\Middleware\CoachMiddleware::class,
             'student' => \App\Http\Middleware\StudentMiddleware::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'logout',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
