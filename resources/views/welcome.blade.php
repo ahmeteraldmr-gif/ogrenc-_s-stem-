@@ -100,16 +100,9 @@
             </nav>
             
             <div class="flex items-center space-x-4">
-                @auth
-                    <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : (auth()->user()->isCoach() ? route('coach.dashboard') : route('student.dashboard')) }}" 
-                       class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md transition">
-                        Panele Git
-                    </a>
-                @else
-                    <a href="{{ route('login') }}" class="px-5 py-2.5 border border-slate-200 text-slate-700 bg-white rounded-xl text-sm font-bold hover:bg-slate-50 transition shadow-sm">
-                        Giriş Yap
-                    </a>
-                @endauth
+                <a href="{{ route('login') }}" class="px-5 py-2.5 border border-slate-200 text-slate-700 bg-white rounded-xl text-sm font-bold hover:bg-slate-50 transition shadow-sm" style="text-decoration: none;">
+                    Giriş Yap
+                </a>
             </div>
         </div>
     </header>
@@ -135,17 +128,10 @@
 
             <!-- CTA Button -->
             <div class="pt-4">
-                @auth
-                    <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : (auth()->user()->isCoach() ? route('coach.dashboard') : route('student.dashboard')) }}" 
-                       class="inline-block px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-base font-extrabold shadow-lg shadow-indigo-200 transition-all hover:scale-105" style="text-decoration: none;">
-                        Panele Git ➜
-                    </a>
-                @else
-                    <a href="{{ route('login') }}" 
-                       class="inline-block px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-base font-extrabold shadow-lg shadow-indigo-200 transition-all hover:scale-105" style="text-decoration: none;">
-                        Sisteme Giriş Yap ➜
-                    </a>
-                @endauth
+                <a href="{{ route('login') }}" 
+                   class="inline-block px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-base font-extrabold shadow-lg shadow-indigo-200 transition-all hover:scale-105" style="text-decoration: none;">
+                    Sisteme Giriş Yap ➜
+                </a>
             </div>
         </section>
 

@@ -5,24 +5,12 @@ use Illuminate\Support\Facades\Route;
 
 // Anasayfa
 Route::get('/', function () {
-    if (auth()->check()) {
-        $user = auth()->user();
-        if ($user->isAdmin()) {
-            return redirect('/admin/dashboard');
-        } elseif ($user->isCoach()) {
-            return redirect('/coach/dashboard');
-        } elseif ($user->isStudent()) {
-            return redirect('/student/dashboard');
-        }
-    }
     return view('welcome');
 });
 
 // Auth Routes
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
-});
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
